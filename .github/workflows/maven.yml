@@ -64,22 +64,23 @@ jobs:
           ls -la target || true
 
       - name: Trivy FS Scan (Project Files)
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          scan-type: "fs"
-          scan-path: "."
-          severity: "HIGH,CRITICAL"
-          vuln-type: "os,library"
-          exit-code: 0
+  uses: aquasecurity/trivy-action@b6643a2
+  with:
+    scan-type: "fs"
+    scan-path: "."
+    severity: "HIGH,CRITICAL"
+    vuln-type: "os,library"
+    exit-code: 0
 
-      - name: Trivy Artifact Scan (target/)
-        uses: aquasecurity/trivy-action@v0.33.1
-        with:
-          scan-type: "fs"
-          scan-path: "target"
-          severity: "CRITICAL"
-          vuln-type: "os,library"
-          exit-code: 1
+     - name: Trivy Artifact Scan (target/)
+  uses: aquasecurity/trivy-action@b6643a2
+  with:
+  scan-type: "fs"
+  scan-path: "target"
+  severity: "CRITICAL"
+  vuln-type: "os,library"
+  exit-code: 1
+
 
 
   gitleaks-scan:
