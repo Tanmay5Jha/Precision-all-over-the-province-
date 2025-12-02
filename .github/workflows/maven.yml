@@ -7,6 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
+
   build:
     name: Build (Maven)
     runs-on: ubuntu-latest
@@ -22,7 +23,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven (create target/)
+      - name: Build with Maven
         run: mvn -B clean package --file pom.xml
 
       - name: Run tests
@@ -30,7 +31,7 @@ jobs:
 
       - name: Show build output (debug)
         run: |
-          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Workspace is $GITHUB_WORKSPACE"
           ls -la
           ls -la target || true
 
@@ -40,13 +41,14 @@ jobs:
           name: maven-target
           path: target
 
+
   trivy-scan:
-    name: Trivy Artifact Scan
+    name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: Checkout repository (optional)
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Download target artifact
@@ -57,29 +59,28 @@ jobs:
 
       - name: Show downloaded files (debug)
         run: |
-          echo "After download:"
+          echo "Downloaded artifact:"
+          ls -la
           ls -la target || true
 
-      - name: Trivy FS Scan (scan project files)
-        uses: aquasecurity/trivy-action@v0.20.0
+      - name: Trivy FS Scan (Project Files)
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           scan-type: "fs"
-          # If you want to scan repo files, omit scan-path or set to '.'; this step focuses on the repo filesystem
           scan-path: "."
-          format: table
-          vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
           exit-code: 0
 
       - name: Trivy Artifact Scan (target/)
-        uses: aquasecurity/trivy-action@v0.20.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
-          scan-type: fs
-          scan-path: target
-          format: table
-          vuln-type: os,library
-          severity: CRITICAL
+          scan-type: "fs"
+          scan-path: "target"
+          severity: "CRITICAL"
+          vuln-type: "os,library"
           exit-code: 1
+
 
   gitleaks-scan:
     name: Gitleaks Secret Scan
@@ -90,9 +91,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Gitleaks Secret Scan
+      - name: Run Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
         with:
-          # If you have a custom config add it here, otherwise leave as default
           config-path: ""
           fail: "true"
