@@ -7,12 +7,13 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build:
+    name: Build (Maven)
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -21,39 +22,67 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with Maven
-        run: mvn -B clean install
+      - name: Build with Maven (create target/)
+        run: mvn -B clean package --file pom.xml
 
-      - name: Run Tests
-        run: mvn test
+      - name: Run tests
+        run: mvn -B test --file pom.xml
 
+      - name: Show build output (debug)
+        run: |
+          echo "Workspace: $GITHUB_WORKSPACE"
+          ls -la
+          ls -la target || true
+
+      - name: Upload target directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-target
+          path: target
 
   trivy-scan:
+    name: Trivy Artifact Scan
     runs-on: ubuntu-latest
     needs: build
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository (optional)
         uses: actions/checkout@v4
 
-      - name: Trivy FS Scan (Project Files)
-        uses: aquasecurity/trivy-action@0.20.0
+      - name: Download target artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-target
+          path: target
+
+      - name: Show downloaded files (debug)
+        run: |
+          echo "After download:"
+          ls -la target || true
+
+      - name: Trivy FS Scan (scan project files)
+        uses: aquasecurity/trivy-action@v0.20.0
         with:
           scan-type: "fs"
+          # If you want to scan repo files, omit scan-path or set to '.'; this step focuses on the repo filesystem
+          scan-path: "."
+          format: table
+          vuln-type: "os,library"
           severity: "HIGH,CRITICAL"
           exit-code: 0
 
-
       - name: Trivy Artifact Scan (target/)
-        uses: aquasecurity/trivy-action@0.20.0
+        uses: aquasecurity/trivy-action@v0.20.0
         with:
-          scan-type: "fs"
-          scan-ref: "./target"
-          severity: "CRITICAL"
+          scan-type: fs
+          scan-path: target
+          format: table
+          vuln-type: os,library
+          severity: CRITICAL
           exit-code: 1
 
-
   gitleaks-scan:
+    name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
     needs: build
 
@@ -64,5 +93,6 @@ jobs:
       - name: Run Gitleaks Secret Scan
         uses: gitleaks/gitleaks-action@v2
         with:
+          # If you have a custom config add it here, otherwise leave as default
           config-path: ""
           fail: "true"
