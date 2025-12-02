@@ -63,11 +63,9 @@ jobs:
           ls -la
           ls -la target || true
 
-      # -------------------------------
-      # 🔒 Trivy Filesystem Scan (repo)
-      # -------------------------------
+      # Use the full commit SHA for Trivy action to avoid tag/short-sha resolution issues
       - name: Trivy FS Scan (Project Files)
-        uses: aquasecurity/trivy-action@b6643a2
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: "fs"
           scan-path: "."
@@ -75,11 +73,8 @@ jobs:
           severity: "HIGH,CRITICAL"
           exit-code: 0
 
-      # ----------------------------------------
-      # 🔒 Trivy Scan of Built Artifact (target/)
-      # ----------------------------------------
       - name: Trivy Artifact Scan (target/)
-        uses: aquasecurity/trivy-action@b6643a2
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
         with:
           scan-type: "fs"
           scan-path: "target"
